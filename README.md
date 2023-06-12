@@ -1,2 +1,2 @@
 # PasswordClier
-A CLI Basic Password Implementation using Javascript
+A CLI Basic Password Manager Implementation using Javascript
