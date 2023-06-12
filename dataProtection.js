@@ -1,6 +1,8 @@
 const crypto = require("crypto");
 const con = require("./connectDb");
 const Crypto = require("crypto-js");
+const chalk = require("chalk");
+const boxen = require("boxen");
 
 const generateSecretKey = (length = 32) => {
   const randomBytes = crypto.randomBytes(length);
@@ -11,11 +13,11 @@ const generateSecretKey = (length = 32) => {
 const dataEncryption = (message, secretKey) => {
   const cipherText = Crypto.AES.encrypt(message, secretKey);
   con.query(
-    `INSERT INTO data (idData, encryptedData, secretKey) VALUES (3,?,?)`,
+    `INSERT INTO data (encryptedData, secretKey) VALUES (?,?)`,
     [cipherText.toString(), secretKey],
     (err, rows) => {
       if (err) throw err;
-      console.log("Data:", rows);
+      console.log(chalk.green("Data encrypted successfully."));
     }
   );
   return cipherText;
@@ -29,17 +31,23 @@ const dataDecryption = (message, secretKey) => {
 
 const secretKey = generateSecretKey();
 
-dataEncryption("gtasi gtasi", secretKey);
-
-con.query("SELECT * from data", (err, rows) => {
-  if (err) throw err;
-  console.log(rows);
-  rows.forEach((row) => {
-    const decryptMessage = dataDecryption(
-      row.encryptedData.toString("utf8"),
-      row.secretKey
-    );
-    console.log("Decrypted message:", decryptMessage);
+const getDecryptedData = () => {
+  con.query("SELECT * from data", (err, rows) => {
+    if (err) throw err;
+    let decryptedEntries = "";
+    rows.forEach((row) => {
+      const decryptMessage = dataDecryption(
+        row.encryptedData.toString("utf8"),
+        row.secretKey
+      );
+      decryptedEntries += decryptMessage + "\n";
+    });
+    const boxedEntries = boxen(chalk.green(decryptedEntries), {
+      padding: 1,
+      borderColor: "yellow",
+    });
+    console.log(boxedEntries);
   });
-});
-module.exports = { dataEncryption, dataDecryption };
+};
+
+module.exports = { dataEncryption, getDecryptedData, generateSecretKey };
